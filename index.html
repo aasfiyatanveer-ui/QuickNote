@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quick Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:        #1c1917;
+    --ink-soft:   #57534e;
+    --ink-faint:  #a8a29e;
+    --paper:      #fafaf9;
+    --surface:    #ffffff;
+    --border:     #e7e5e4;
+    --border-md:  #d6d3d1;
+    --accent:     #c2410c;
+    --accent-lt:  #fff7ed;
+    --accent-bd:  #fed7aa;
+
+    --note-yellow: #fefce8;
+    --note-rose:   #fff1f2;
+    --note-sky:    #f0f9ff;
+    --note-mint:   #f0fdf4;
+    --note-lavender:#faf5ff;
+    --note-peach:  #fff7ed;
+
+    --r: 12px;
+    --shadow: 0 1px 3px rgba(28,25,23,.06), 0 1px 2px rgba(28,25,23,.04);
+    --shadow-md: 0 4px 12px rgba(28,25,23,.08), 0 1px 4px rgba(28,25,23,.04);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand-title {
+    font-family: 'Lora', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .brand-dot { color: var(--accent); }
+  .note-count {
+    font-size: 12px;
+    color: var(--ink-faint);
+    background: var(--border);
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .status-pill {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all .3s;
+  }
+  .status-pill.online  { background: #dcfce7; color: #166534; }
+  .status-pill.offline { background: #fee2e2; color: #991b1b; }
+  .status-pill.loading { background: var(--border); color: var(--ink-soft); }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; display: inline-block;
+  }
+
+  /* ── Layout ──────────────────────────────────── */
+  main { max-width: 920px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+  /* ── Compose box ──────────────────────────────── */
+  .compose-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .compose-card:focus-within {
+    box-shadow: 0 0 0 3px var(--accent-bd), var(--shadow-md);
+  }
+  .compose-header {
+    padding: .875rem 1.25rem .5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .compose-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .color-palette {
+    display: flex;
+    gap: 6px;
+  }
+  .color-swatch {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .color-swatch:hover { transform: scale(1.2); }
+  .color-swatch.active { border-color: var(--ink-soft); }
+
+  #note-title {
+    width: 100%;
+    padding: .875rem 1.25rem .375rem;
+    border: none; outline: none;
+    font-family: 'Lora', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: transparent;
+    line-height: 1.4;
+  }
+  #note-title::placeholder { color: var(--ink-faint); font-style: italic; font-weight: 400; }
+
+  #note-content {
+    width: 100%;
+    padding: .375rem 1.25rem 1rem;
+    border: none; outline: none;
+    resize: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem;
+    line-height: 1.7;
+    color: var(--ink);
+    background: transparent;
+    min-height: 100px;
+    transition: min-height .2s;
+  }
+  #note-content:focus { min-height: 140px; }
+  #note-content::placeholder { color: var(--ink-faint); }
+
+  .compose-footer {
+    padding: .75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafaf9;
+  }
+  .char-count {
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .char-count.warn { color: #b45309; }
+
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: .5rem 1.25rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .875rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s, transform .1s;
+  }
+  .btn-save:hover { background: #9a3412; }
+  .btn-save:active { transform: scale(.97); }
+  .btn-save:disabled { background: var(--border-md); cursor: not-allowed; transform: none; }
+  .btn-save svg { width: 14px; height: 14px; }
+
+  /* ── Section header ───────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Lora', serif;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: .02em;
+  }
+  .sort-select {
+    font-size: 12px;
+    color: var(--ink-soft);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* ── Notes grid ──────────────────────────────── */
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  /* ── Note card ───────────────────────────────── */
+  .note-card {
+    border-radius: var(--r);
+    border: 1px solid var(--border);
+    padding: 1.125rem 1.125rem .875rem;
+    position: relative;
+    transition: box-shadow .2s, transform .2s;
+    cursor: default;
+    animation: fadeUp .3s ease both;
+  }
+  .note-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .note-pin {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,.6);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity .2s, background .15s;
+  }
+  .note-card:hover .note-pin,
+  .note-pin.pinned { opacity: 1; }
+  .note-pin.pinned { background: var(--accent-lt); color: var(--accent); }
+  .note-pin:hover { background: var(--border); }
+
+  .note-title-text {
+    font-family: 'Lora', serif;
+    font-size: .975rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: .4rem;
+    margin-right: 1.5rem;
+    word-break: break-word;
+  }
+  .note-body {
+    font-size: .875rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-height: 140px;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  }
+  .note-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: .875rem;
+    padding-top: .625rem;
+    border-top: 1px solid rgba(0,0,0,.07);
+  }
+  .note-time {
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .note-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .note-card:hover .note-actions { opacity: 1; }
+  .action-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background .15s, color .15s;
+    color: var(--ink-faint);
+  }
+  .action-btn:hover { background: rgba(0,0,0,.07); color: var(--ink); }
+  .action-btn.delete:hover { background: #fee2e2; color: #dc2626; }
+
+  /* ── Empty + loading states ───────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--ink-faint);
+  }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .4; }
+  .empty-title { font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: .375rem; }
+  .empty-sub { font-size: .875rem; }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .skeleton-card {
+    border-radius: var(--r);
+    border: 1px solid var(--border);
+    padding: 1.125rem;
+    background: var(--surface);
+  }
+  .skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--border) 25%, #f5f5f4 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    margin-bottom: 8px;
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+
+  /* ── Toast ────────────────────────────────────── */
+  #toast {
+    position: fixed;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink);
+    color: #fafaf9;
+    padding: .625rem 1.25rem;
+    border-radius: 99px;
+    font-size: .875rem;
+    font-weight: 500;
+    pointer-events: none;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { background: #dc2626; }
+
+  /* ── Edit modal ─────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(28,25,23,.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 150;
+    padding: 1rem;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--r);
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(28,25,23,.2);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title {
+    font-family: 'Lora', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: none; background: transparent; cursor: pointer;
+    font-size: 16px; color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--border); }
+  .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; }
+  .modal input, .modal textarea {
+    width: 100%;
+    padding: .625rem .875rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit; font-size: .9rem;
+    color: var(--ink); background: var(--paper);
+    outline: none; transition: border-color .2s;
+  }
+  .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: .625rem;
+  }
+  .btn-ghost {
+    padding: .5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: inherit; font-size: .875rem; font-weight: 500;
+    cursor: pointer; color: var(--ink-soft);
+    transition: background .15s;
+  }
+  .btn-ghost:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="brand-title">quick<span class="brand-dot">.</span>notes</span>
+    <span class="note-count" id="note-count">— notes</span>
+  </div>
+  <div class="status-pill loading" id="status-pill">
+    <span class="status-dot"></span>
+    <span id="status-text">connecting</span>
+  </div>
+</header>
+
+<main>
+  <!-- Compose -->
+  <div class="compose-card" id="compose-card">
+    <div class="compose-header">
+      <span class="compose-label">New Note</span>
+      <div class="color-palette" id="color-palette">
+        <div class="color-swatch active" style="background:#fefce8" data-color="#fefce8" title="Yellow"></div>
+        <div class="color-swatch" style="background:#fff1f2" data-color="#fff1f2" title="Rose"></div>
+        <div class="color-swatch" style="background:#f0f9ff" data-color="#f0f9ff" title="Sky"></div>
+        <div class="color-swatch" style="background:#f0fdf4" data-color="#f0fdf4" title="Mint"></div>
+        <div class="color-swatch" style="background:#faf5ff" data-color="#faf5ff" title="Lavender"></div>
+        <div class="color-swatch" style="background:#fff7ed" data-color="#fff7ed" title="Peach"></div>
+        <div class="color-swatch" style="background:#ffffff; border: 1px solid #e7e5e4;" data-color="#ffffff" title="White"></div>
+      </div>
+    </div>
+    <input type="text" id="note-title" placeholder="Title your thought…" maxlength="120" autocomplete="off" />
+    <textarea id="note-content" placeholder="Start writing…" maxlength="2000"></textarea>
+    <div class="compose-footer">
+      <span class="char-count" id="char-count">0 / 2000</span>
+      <button class="btn-save" id="save-btn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M5 12l5 5L20 7"/>
+        </svg>
+        Save Note
+      </button>
+    </div>
+  </div>
+
+  <!-- Notes list -->
+  <div class="section-header">
+    <span class="section-title">Saved Notes</span>
+    <select class="sort-select" id="sort-select">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="alpha">A → Z</option>
+    </select>
+  </div>
+
+  <div id="notes-container">
+    <!-- skeleton -->
+    <div class="skeleton-grid" id="skeleton">
+      <div class="skeleton-card">
+        <div class="skeleton-line" style="width:60%"></div>
+        <div class="skeleton-line" style="width:90%"></div>
+        <div class="skeleton-line" style="width:75%"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-line" style="width:50%"></div>
+        <div class="skeleton-line" style="width:85%"></div>
+        <div class="skeleton-line" style="width:65%"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Edit Modal -->
+<div class="modal-backdrop" id="edit-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Note</span>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="edit-title" placeholder="Title" maxlength="120" />
+      <textarea id="edit-content" placeholder="Content" maxlength="2000"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="modal-cancel">Cancel</button>
+      <button class="btn-save" id="modal-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let notes = [];
+let selectedColor = '#fefce8';
+let editingId = null;
+
+/* ── Helpers ─────────────────────────────────────── */
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type === 'error' ? 'error show' : 'show';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function relativeTime(ms) {
+  const diff = Date.now() - ms;
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? 'yesterday' : `${d}d ago`;
+}
+
+function setStatus(state) {
+  const pill = document.getElementById('status-pill');
+  const text = document.getElementById('status-text');
+  pill.className = `status-pill ${state}`;
+  text.textContent = state === 'online' ? 'connected' : state === 'offline' ? 'offline' : 'connecting…';
+}
+
+/* ── Fetch notes ──────────────────────────────────── */
+async function fetchNotes() {
+  try {
+    const res = await fetch(`${API}/notes`);
+    if (!res.ok) throw new Error();
+    notes = await res.json();
+    setStatus('online');
+    renderNotes();
+  } catch {
+    setStatus('offline');
+    document.getElementById('skeleton').remove?.();
+    renderNotes();
+  }
+}
+
+/* ── Render ───────────────────────────────────────── */
+function getSorted() {
+  const sort = document.getElementById('sort-select').value;
+  const arr = [...notes];
+  if (sort === 'newest') arr.sort((a,b) => b.created_at - a.created_at);
+  else if (sort === 'oldest') arr.sort((a,b) => a.created_at - b.created_at);
+  else if (sort === 'alpha') arr.sort((a,b) => a.title.localeCompare(b.title));
+  // pinned always float
+  return arr.sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0));
+}
+
+function renderNotes() {
+  const container = document.getElementById('notes-container');
+  const sk = document.getElementById('skeleton');
+  if (sk) sk.remove();
+
+  // update count
+  const cnt = document.getElementById('note-count');
+  cnt.textContent = `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`;
+
+  if (notes.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <div class="empty-title">No notes yet</div>
+        <div class="empty-sub">Write your first note above — it'll appear here instantly.</div>
+      </div>`;
+    return;
+  }
+
+  const sorted = getSorted();
+  const grid = document.createElement('div');
+  grid.className = 'notes-grid';
+
+  sorted.forEach(note => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+    card.style.background = note.color || '#fefce8';
+    card.dataset.id = note.id;
+    card.innerHTML = `
+      <button class="note-pin ${note.pinned ? 'pinned' : ''}" data-id="${note.id}" title="${note.pinned ? 'Unpin' : 'Pin'}">
+        ${note.pinned ? '📌' : '📍'}
+      </button>
+      <div class="note-title-text">${escHtml(note.title)}</div>
+      <div class="note-body">${escHtml(note.content)}</div>
+      <div class="note-meta">
+        <span class="note-time">${relativeTime(note.created_at)}</span>
+        <div class="note-actions">
+          <button class="action-btn edit" data-id="${note.id}" title="Edit">✏️</button>
+          <button class="action-btn delete" data-id="${note.id}" title="Delete">🗑</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(grid);
+
+  grid.querySelectorAll('.note-pin').forEach(btn => btn.addEventListener('click', togglePin));
+  grid.querySelectorAll('.action-btn.edit').forEach(btn => btn.addEventListener('click', openEdit));
+  grid.querySelectorAll('.action-btn.delete').forEach(btn => btn.addEventListener('click', deleteNote));
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Save ─────────────────────────────────────────── */
+async function saveNote() {
+  const title   = document.getElementById('note-title').value.trim();
+  const content = document.getElementById('note-content').value.trim();
+  if (!title && !content) return;
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><circle cx="12" cy="12" r="9" stroke-dasharray="56" stroke-dashoffset="20" style="animation:spin .8s linear infinite"></circle></svg> Saving…`;
+
+  try {
+    const res = await fetch(`${API}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title || 'Untitled', content, color: selectedColor })
+    });
+    if (!res.ok) throw new Error();
+    const newNote = await res.json();
+    notes.unshift(newNote);
+    renderNotes();
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-content').value = '';
+    updateCharCount();
+    validateSave();
+    toast('Note saved ✓');
+  } catch {
+    toast('Could not save — is the backend running?', 'error');
+  } finally {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 7"/></svg> Save Note`;
+    btn.disabled = false;
+  }
+}
+
+/* ── Delete ───────────────────────────────────────── */
+async function deleteNote(e) {
+  const id = Number(e.currentTarget.dataset.id);
+  const card = document.querySelector(`.note-card[data-id="${id}"]`);
+  if (card) { card.style.opacity = '.4'; card.style.pointerEvents = 'none'; }
+  try {
+    const res = await fetch(`${API}/notes/${id}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 204) throw new Error();
+    notes = notes.filter(n => n.id !== id);
+    renderNotes();
+    toast('Note deleted');
+  } catch {
+    if (card) { card.style.opacity = '1'; card.style.pointerEvents = ''; }
+    toast('Delete failed', 'error');
+  }
+}
+
+/* ── Toggle pin ───────────────────────────────────── */
+async function togglePin(e) {
+  const id = Number(e.currentTarget.dataset.id);
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  const newPinned = !note.pinned;
+  try {
+    const res = await fetch(`${API}/notes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pinned: newPinned })
+    });
+    if (!res.ok) throw new Error();
+    note.pinned = newPinned;
+    renderNotes();
+    toast(newPinned ? 'Note pinned 📌' : 'Note unpinned');
+  } catch {
+    toast('Action failed', 'error');
+  }
+}
+
+/* ── Edit modal ───────────────────────────────────── */
+function openEdit(e) {
+  editingId = Number(e.currentTarget.dataset.id);
+  const note = notes.find(n => n.id === editingId);
+  if (!note) return;
+  document.getElementById('edit-title').value = note.title;
+  document.getElementById('edit-content').value = note.content;
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingId = null;
+}
+
+async function saveEdit() {
+  const title   = document.getElementById('edit-title').value.trim();
+  const content = document.getElementById('edit-content').value.trim();
+  if (!title && !content) { toast('Title or content required', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/notes/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title || 'Untitled', content })
+    });
+    if (!res.ok) throw new Error();
+    const updated = await res.json();
+    const idx = notes.findIndex(n => n.id === editingId);
+    if (idx !== -1) notes[idx] = updated;
+    renderNotes();
+    closeModal();
+    toast('Note updated ✓');
+  } catch {
+    toast('Update failed', 'error');
+  }
+}
+
+/* ── Color palette ────────────────────────────────── */
+document.querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    sw.classList.add('active');
+    selectedColor = sw.dataset.color;
+    document.getElementById('compose-card').style.background = selectedColor;
+  });
+});
+
+/* ── Char counter & validation ────────────────────── */
+function updateCharCount() {
+  const len = document.getElementById('note-content').value.length;
+  const el = document.getElementById('char-count');
+  el.textContent = `${len} / 2000`;
+  el.className = 'char-count' + (len > 1800 ? ' warn' : '');
+}
+function validateSave() {
+  const t = document.getElementById('note-title').value.trim();
+  const c = document.getElementById('note-content').value.trim();
+  document.getElementById('save-btn').disabled = !t && !c;
+}
+
+document.getElementById('note-title').addEventListener('input', validateSave);
+document.getElementById('note-content').addEventListener('input', () => { updateCharCount(); validateSave(); });
+
+/* ── Keyboard shortcut Ctrl+Enter to save ────────── */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveNote();
+});
+
+/* ── Sort ─────────────────────────────────────────── */
+document.getElementById('sort-select').addEventListener('change', renderNotes);
+
+/* ── Buttons ──────────────────────────────────────── */
+document.getElementById('save-btn').addEventListener('click', saveNote);
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-save').addEventListener('click', saveEdit);
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeModal();
+});
+
+/* ── Spin keyframe ────────────────────────────────── */
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg) } }';
+document.head.appendChild(style);
+
+/* ── Poll for real-time updates every 30s ─────────── */
+fetchNotes();
+setInterval(fetchNotes, 30000);
+</script>
+</body>
+</html>
